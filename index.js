@@ -16,13 +16,18 @@ mongoose
   .then((_) => console.log("MongoDB connected"))
   .catch((err) => console.error(err));
 
+app.get("/user", async (req, res) => {
+  const key = req.query.key;
+  if (!key) return res.status(400).json({ status: false, msg: "Invalid key" });
+
+  const user = await User.findOne({ key });
+  return res.status(200).json({ status: true, msg: user });
+});
+
 app.post("/user", async (req, res) => {
-  const body = req.body;
   const user = new User(req.body);
   await user.save();
-  return res
-    .status(200)
-    .json({ status: true, msg: "User data added successfully" });
+  return res.status(200).json({ status: true, msg: req.body });
 });
 
 app.get("/add", (req, res) => {
