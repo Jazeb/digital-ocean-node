@@ -7,7 +7,7 @@ app.use(express.json());
 const MONGO_URI = "mongodb://127.0.0.1:27017/serialKeys";
 const SerialKeys = require("./serialKeys");
 const KeysCollection = require("./keysCollection");
-const User = require("./UsersCollection");
+const User = require("./User");
 
 const mongoConfig = { useNewUrlParser: true, useUnifiedTopology: true };
 
