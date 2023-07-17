@@ -222,11 +222,11 @@ giveAwayapp.get("/giveAway", async (req, res) => {
       });
       await _newGiveAway.save();
     }
-    const newG = await ConsumedGiveAways.findOne({
-      shopId,
-    });
+    // const newG = await ConsumedGiveAways.findOne({
+    //   shopId,
+    // });
 
-    console.log(newG);
+    // console.log(newG);
 
     if (quotaCompleted) {
       return res.status(200).json({
@@ -234,7 +234,7 @@ giveAwayapp.get("/giveAway", async (req, res) => {
         msg: `Try Again`,
       });
     } else {
-      return res.status(200).json({ status: true, todayGiveAway: newG });
+      return res.status(200).json({ status: true, todayGiveAway });
     }
   }
 });
