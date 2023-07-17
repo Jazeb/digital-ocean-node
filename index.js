@@ -115,7 +115,7 @@ function getTodayQuota(todayGiveAway) {
 // }
 
 let api_hits = 0;
-const no = 30;
+const no = 100;
 
 const megaGiveAwayConsumed = {
   TWIX: 0,
