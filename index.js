@@ -46,26 +46,18 @@ app.get("/add", (req, res) => {
 app.post("/assign/serialKey", async function (req, res) {
   const { machineId, userId, serialKey } = req.body;
   if (!(machineId && userId && serialKey))
-    return res
-      .status(400)
-      .json({ status: false, msg: "Provide required fields" });
+    return res.status(400).json({ status: false, msg: "Provide required fields" });
 
   try {
     const isValidKey = await KeysCollection.findOne({ serialKey });
-    if (!isValidKey)
-      return res.status(400).json({ status: false, msg: "Invalid serial key" });
+    if (!isValidKey) return res.status(400).json({ status: false, msg: "Invalid serial key" });
 
     const currentSerialKey = await SerialKeys.findOne({ serialKey });
-    if (currentSerialKey)
-      return res
-        .status(400)
-        .json({ status: false, msg: "This key is already used" });
+    if (currentSerialKey) return res.status(400).json({ status: false, msg: "This key is already used" });
 
     const key = new SerialKeys(req.body);
     await key.save();
-    return res
-      .status(200)
-      .json({ status: true, msg: "Serial key added for the user" });
+    return res.status(200).json({ status: true, msg: "Serial key added for the user" });
   } catch (err) {
     return res.status(500).json({ status: false, msg: err.message });
   }
@@ -97,23 +89,6 @@ function getTodayQuota(todayGiveAway) {
   return typeEvents[todayGiveAway];
 }
 
-// async function addNewGiveAway(shopId, newObj) {
-//   try {
-//     const previouslyConsumed = await ConsumedGiveAways.findOne({
-//       shopId,
-//     });
-
-//     previouslyConsumed.consumedGiveAways.push(newObj);
-
-//     const updated = new ConsumedGiveAways(previouslyConsumed);
-//     await updated.save();
-//     return true;
-//   } catch (error) {
-//     console.error(error);
-//     return;
-//   }
-// }
-
 let api_hits = 0;
 const no = 100;
 
@@ -122,28 +97,28 @@ const megaGiveAwayConsumed = {
   GALAXY: 0,
 };
 
+const getTodayGiveAway = (consumed = []) => {
+  const giveAways = ["STICKERS", "CHOCOLATES", "T_SHIRTS"];
+  const diffArr = giveAways.filter((o) => !consumed.includes(o));
+
+  return diffArr[Math.floor(Math.random() * diffArr.length)];
+};
+
 giveAwayapp.get("/giveAway", async (req, res) => {
   api_hits++;
-  const { shopId, date, resetMegaAward } = req.query;
+  const { shopId, date } = req.query;
 
   // return await ConsumedGiveAways.deleteOne({
   //   shopId,
   // });
 
-  // if (resetMegaAward) {
-  //   megaGiveAwayConsumed.GALAXY = 0;
-  //   megaGiveAwayConsumed.TWIX = 0;
-  // }
-
-  const megaAwardNotCompleted =
-    megaGiveAwayConsumed.GALAXY < 2 || megaGiveAwayConsumed.TWIX < 2;
+  const megaAwardNotCompleted = megaGiveAwayConsumed.GALAXY < 2 || megaGiveAwayConsumed.TWIX < 2;
 
   if (api_hits == no && megaAwardNotCompleted) {
     // mega award
 
     const mega_give_aways = ["TWIX", "GALAXY"];
-    const today_mega_give_away =
-      mega_give_aways[Math.floor(Math.random() * mega_give_aways.length)];
+    const today_mega_give_away = mega_give_aways[Math.floor(Math.random() * mega_give_aways.length)];
 
     if (megaGiveAwayConsumed[today_mega_give_away] == 2) {
       const index = mega_give_aways.indexOf(today_mega_give_away) ^ 1;
@@ -160,46 +135,50 @@ giveAwayapp.get("/giveAway", async (req, res) => {
       return res.status(200).json({ status: true, today_mega_give_away });
     }
   } else {
-    if (!shopId || !date)
-      return res
-        .status(400)
-        .json({ status: false, msg: "Provide shop id and date" });
-
-    const _todayGiveAway = ["STICKERS", "CHOCOLATES", "T_SHIRTS"];
-    const todayGiveAway =
-      _todayGiveAway[Math.floor(Math.random() * _todayGiveAway.length)];
-
-    const todayQuota = getTodayQuota(todayGiveAway);
+    let todayGiveAway = "";
 
     const previouslyConsumed = await ConsumedGiveAways.findOne({
       shopId,
     });
 
-    let quotaCompleted = false;
     if (previouslyConsumed) {
       const { consumedGiveAways } = previouslyConsumed;
 
-      const hasTodayGiveAway = consumedGiveAways.filter(
-        (g) => g.giveAwayType == todayGiveAway && g.date == date
-      );
+      const todayGiveAways = consumedGiveAways.filter((g) => g.date == date);
 
-      if (hasTodayGiveAway.length) {
-        let shouldUpdate = false;
+      if (todayGiveAways.length) {
+        const consumedToday = [];
+        for (const c of todayGiveAways) {
+          const quota = getTodayQuota(c.giveAwayType);
+          if (c.giveAwayConsumed >= quota) consumedToday.push(c.giveAwayType);
+        }
 
-        previouslyConsumed.consumedGiveAways.map(async (c) => {
+        todayGiveAway = getTodayGiveAway(consumedToday);
+        const consumedString = previouslyConsumed.consumedGiveAways.map((c) => c.giveAwayType);
+
+        previouslyConsumed.consumedGiveAways.map((c) => {
           if (c.giveAwayType == todayGiveAway && c.date == date) {
-            if (c.giveAwayConsumed < todayQuota) {
-              c.giveAwayConsumed++;
-              shouldUpdate = true;
-            } else quotaCompleted = true;
+            c.giveAwayConsumed++;
+          } else {
+            // no giveaway for today and for this type
+
+            if (!consumedString.includes(todayGiveAway)) {
+              consumedString.push(todayGiveAway);
+              consumedGiveAways.push({
+                giveAwayType: todayGiveAway,
+                giveAwayConsumed: 1,
+                date,
+              });
+            }
           }
         });
-        if (shouldUpdate) {
-          const newUpdated = new ConsumedGiveAways(previouslyConsumed);
-          await newUpdated.save();
-        }
+
+        console.log("Updating\n", previouslyConsumed);
+        const newUpdated = new ConsumedGiveAways(previouslyConsumed);
+        await newUpdated.save();
       } else {
         // no giveaway for today and for this type
+        todayGiveAway = getTodayGiveAway();
         previouslyConsumed.consumedGiveAways.push({
           giveAwayType: todayGiveAway,
           giveAwayConsumed: 1,
@@ -210,6 +189,7 @@ giveAwayapp.get("/giveAway", async (req, res) => {
         await _newGiveAway.save();
       }
     } else {
+      todayGiveAway = getTodayGiveAway();
       const _newGiveAway = new ConsumedGiveAways({
         shopId,
         consumedGiveAways: [
@@ -222,20 +202,8 @@ giveAwayapp.get("/giveAway", async (req, res) => {
       });
       await _newGiveAway.save();
     }
-    // const newG = await ConsumedGiveAways.findOne({
-    //   shopId,
-    // });
 
-    // console.log(newG);
-
-    if (quotaCompleted) {
-      return res.status(200).json({
-        status: true,
-        msg: `Try Again`,
-      });
-    } else {
-      return res.status(200).json({ status: true, todayGiveAway });
-    }
+    return res.status(200).json({ status: true, todayGiveAway });
   }
 });
 
