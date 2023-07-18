@@ -165,7 +165,7 @@ giveAwayapp.get("/giveAway", async (req, res) => {
         .status(400)
         .json({ status: false, msg: "Provide shop id and date" });
 
-    const _todayGiveAway = ["STICKERS", "CHOCOLATES", "GIFT_CARDS", "T_SHIRTS"];
+    const _todayGiveAway = ["STICKERS", "CHOCOLATES", "T_SHIRTS"];
     const todayGiveAway =
       _todayGiveAway[Math.floor(Math.random() * _todayGiveAway.length)];
 
