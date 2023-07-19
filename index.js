@@ -63,7 +63,7 @@ app.post("/assign/serialKey", async function (req, res) {
   }
 });
 
-function getTodayQuota(todayGiveAway) {
+function getTodayQuota(c) {
   const giveAways = {
     stickers: 2964,
     chocolates: 2964,
@@ -79,14 +79,14 @@ function getTodayQuota(todayGiveAway) {
   const giftCards = giveAways.giftCards / totalShops;
   const tshirts = giveAways.TShirts / totalShops;
 
-  const typeEvents = {
+  const giveAwayTypes = {
     STICKERS: stickers / events,
     CHOCOLATES: chocos / events,
     GIFT_CARDS: giftCards / events,
     T_SHIRTS: tshirts / events,
   };
 
-  return typeEvents[todayGiveAway];
+  return c.giveAwayConsumed >= giveAwayTypes[c.giveAwayType];
 }
 
 let api_hits = 0;
@@ -149,17 +149,16 @@ giveAwayapp.get("/giveAway", async (req, res) => {
       if (todayGiveAways.length) {
         const consumedToday = [];
         for (const c of todayGiveAways) {
-          const quota = getTodayQuota(c.giveAwayType);
-          if (c.giveAwayConsumed >= quota) consumedToday.push(c.giveAwayType);
+          const isQuotaCompleted = getTodayQuota(c);
+          if (isQuotaCompleted) consumedToday.push(c.giveAwayType);
         }
 
         todayGiveAway = getTodayGiveAway(consumedToday);
         const consumedString = previouslyConsumed.consumedGiveAways.map((c) => c.giveAwayType);
 
         previouslyConsumed.consumedGiveAways.map((c) => {
-          if (c.giveAwayType == todayGiveAway && c.date == date) {
-            c.giveAwayConsumed++;
-          } else {
+          if (c.giveAwayType == todayGiveAway && c.date == date) c.giveAwayConsumed++;
+          else {
             // no giveaway for today and for this type
 
             if (!consumedString.includes(todayGiveAway)) {
