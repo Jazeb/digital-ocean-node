@@ -65,13 +65,13 @@ app.post("/assign/serialKey", async function (req, res) {
 
 function getTodayQuota(c) {
   const giveAways = {
-    stickers: 2964,
-    chocolates: 2964,
-    giftCards: 312,
-    TShirts: 312,
+    stickers: 3168,
+    chocolates: 6336,
+    giftCards: 320,
+    TShirts: 288,
   };
 
-  const totalShops = 26;
+  const totalShops = 24;
   const events = 6;
 
   const stickers = giveAways.stickers / totalShops;
@@ -132,7 +132,7 @@ giveAwayapp.get("/giveAway", async (req, res) => {
     } else {
       megaGiveAwayConsumed[today_mega_give_away]++;
       api_hits = 0;
-      return res.status(200).json({ status: true, today_mega_give_away });
+      return res.status(200).json({ status: true, todayGiveAway: today_mega_give_away });
     }
   } else {
     let todayGiveAway = "";
@@ -145,7 +145,7 @@ giveAwayapp.get("/giveAway", async (req, res) => {
       const { consumedGiveAways } = previouslyConsumed;
 
       const todayGiveAways = consumedGiveAways.filter((g) => g.date == date);
-
+      let shouldReturn = false;
       if (todayGiveAways.length) {
         const consumedToday = [];
         for (const c of todayGiveAways) {
@@ -172,9 +172,14 @@ giveAwayapp.get("/giveAway", async (req, res) => {
           }
         });
 
-        console.log("Updating\n", previouslyConsumed);
-        const newUpdated = new ConsumedGiveAways(previouslyConsumed);
-        await newUpdated.save();
+        if (!todayGiveAway && consumedToday.length == 3) {
+          shouldReturn = true;
+          return res.status(200).json({ status: false, todayGiveAway: "Try Again" });
+        } else {
+          console.log("Updating\n", previouslyConsumed);
+          const newUpdated = new ConsumedGiveAways(previouslyConsumed);
+          await newUpdated.save();
+        }
       } else {
         // no giveaway for today and for this type
         todayGiveAway = getTodayGiveAway();
@@ -201,6 +206,7 @@ giveAwayapp.get("/giveAway", async (req, res) => {
       });
       await _newGiveAway.save();
     }
+    if (shouldReturn) return;
 
     return res.status(200).json({ status: true, todayGiveAway });
   }
