@@ -111,7 +111,7 @@ giveAwayapp.get("/giveAway", async (req, res) => {
   // return await ConsumedGiveAways.deleteOne({
   //   shopId,
   // });
-
+  let shouldReturn = false;
   const megaAwardNotCompleted = megaGiveAwayConsumed.GALAXY < 2 || megaGiveAwayConsumed.TWIX < 2;
 
   if (api_hits == no && megaAwardNotCompleted) {
@@ -145,7 +145,7 @@ giveAwayapp.get("/giveAway", async (req, res) => {
       const { consumedGiveAways } = previouslyConsumed;
 
       const todayGiveAways = consumedGiveAways.filter((g) => g.date == date);
-      let shouldReturn = false;
+
       if (todayGiveAways.length) {
         const consumedToday = [];
         for (const c of todayGiveAways) {
