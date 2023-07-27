@@ -90,7 +90,7 @@ function getTodayQuota(c) {
 }
 
 let api_hits = 0;
-const no = 100;
+const no = 30;
 
 const megaGiveAwayConsumed = {
   TWIX: 0,
@@ -104,6 +104,10 @@ const getTodayGiveAway = (consumed = []) => {
   return diffArr[Math.floor(Math.random() * diffArr.length)];
 };
 
+const megaGiveAway = [];
+
+const c = [];
+
 giveAwayapp.get("/giveAway", async (req, res) => {
   api_hits++;
   const { shopId, date } = req.query;
@@ -111,20 +115,28 @@ giveAwayapp.get("/giveAway", async (req, res) => {
   // return await ConsumedGiveAways.deleteOne({
   //   shopId,
   // });
-  let shouldReturn = false;
-  const megaAwardNotCompleted = megaGiveAwayConsumed.GALAXY < 2 || megaGiveAwayConsumed.TWIX < 2;
 
-  if (api_hits == no && megaAwardNotCompleted) {
+  let shouldReturn = false;
+
+  const megaAwardNotCompleted = megaGiveAwayConsumed.GALAXY < 2 || megaGiveAwayConsumed.TWIX < 2;
+  const isConsumedOnThisDate = megaGiveAway.filter((m) => m == date);
+
+  if (api_hits == no && megaAwardNotCompleted && !isConsumedOnThisDate.length && c.length < 3) {
     // mega award
 
     const mega_give_aways = ["TWIX", "GALAXY"];
-    const today_mega_give_away = mega_give_aways[Math.floor(Math.random() * mega_give_aways.length)];
+
+    let today_mega_give_away = mega_give_aways[Math.floor(Math.random() * mega_give_aways.length)];
+    if (today_mega_give_away == "GALAXY" && c.includes(today_mega_give_away)) today_mega_give_away = "TWIX";
 
     if (megaGiveAwayConsumed[today_mega_give_away] == 2) {
       const index = mega_give_aways.indexOf(today_mega_give_away) ^ 1;
 
       megaGiveAwayConsumed[mega_give_aways[index]]++;
       api_hits = 0;
+      megaGiveAway.push(date);
+      c.push(today_mega_give_away);
+
       return res.status(200).json({
         status: true,
         today_mega_give_away: megaGiveAwayConsumed[mega_give_aways[index]],
@@ -132,6 +144,8 @@ giveAwayapp.get("/giveAway", async (req, res) => {
     } else {
       megaGiveAwayConsumed[today_mega_give_away]++;
       api_hits = 0;
+      megaGiveAway.push(date);
+      c.push(today_mega_give_away);
       return res.status(200).json({ status: true, todayGiveAway: today_mega_give_away });
     }
   } else {
